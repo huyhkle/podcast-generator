@@ -24,12 +24,24 @@ export default function Home() {
         body: JSON.stringify({ focus, date: today }),
       });
 
-      const data = await res.json();
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Lỗi server');
+      }
 
-      if (!res.ok) throw new Error(data.error || 'Lỗi server');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
 
-      setScript(data.script);
+      while (true) {
+        const { done: streamDone, value } = await reader.read();
+        if (streamDone) break;
+        fullText += decoder.decode(value);
+        setScript(fullText);
+      }
+
       setDone(true);
+
     } catch (err) {
       setError(err.message);
     }
@@ -76,7 +88,6 @@ export default function Home() {
             {today}
           </div>
 
-          {/* Options */}
           {[
             { value: 'balanced', label: '⚖️  Cân bằng — Thế giới + Việt Nam' },
             { value: 'vietnam', label: '🇻🇳  Tập trung Việt Nam & Kinh tế' },
@@ -105,7 +116,6 @@ export default function Home() {
             </div>
           ))}
 
-          {/* Button */}
           <button
             onClick={generate}
             disabled={loading}
@@ -119,7 +129,7 @@ export default function Home() {
               marginTop: '8px',
             }}
           >
-            {loading ? '⏳  Đang tạo script...' : '▶  Generate Script Hôm Nay'}
+            {loading ? '⏳  Đang viết script...' : '▶  Generate Script Hôm Nay'}
           </button>
 
           {error && (
@@ -132,8 +142,11 @@ export default function Home() {
         {/* Result */}
         {script && (
           <div style={{ background: '#111115', border: '1px solid #1E1E25', borderRadius: '12px', padding: '24px' }}>
-            <div style={{ fontSize: '11px', letterSpacing: '2px', color: done ? '#5CE09A' : '#C8A96E', fontFamily: 'monospace', marginBottom: '16px' }}>
-              {done ? '✅ SCRIPT HOÀN TẤT' : 'ĐANG TẠO...'}
+            <div style={{ fontSize: '11px', letterSpacing: '2px', color: done ? '#5CE09A' : '#C8A96E', fontFamily: 'monospace', marginBottom: '8px' }}>
+              {done ? '✅ SCRIPT HOÀN TẤT' : '⏳ ĐANG VIẾT...'}
+            </div>
+            <div style={{ fontSize: '11px', color: '#444', fontFamily: 'monospace', marginBottom: '16px' }}>
+              {script.trim().split(/\s+/).length.toLocaleString()} từ
             </div>
             <div style={{
               background: '#0A0A0D', border: '1px solid #1E1E25', borderRadius: '8px',
@@ -143,25 +156,29 @@ export default function Home() {
             }}>
               {script}
             </div>
-            <button
-              onClick={copy}
-              style={{
-                width: '100%', padding: '14px',
-                background: 'none', border: '1px solid #C8A96E',
-                borderRadius: '10px', color: '#C8A96E',
-                fontSize: '14px', fontFamily: 'Georgia, serif',
-                cursor: 'pointer', marginBottom: '12px',
-              }}
-            >
-              📋  Copy toàn bộ script
-            </button>
-            <div style={{ fontSize: '12px', color: '#444', textAlign: 'center', fontFamily: 'monospace' }}>
-              Sau khi copy → mở{' '}
-              <a href="https://notebooklm.google.com" target="_blank" rel="noreferrer" style={{ color: '#C8A96E' }}>
-                notebooklm.google.com
-              </a>
-              {' '}→ New Notebook → Add Source → Paste Text → Audio Overview
-            </div>
+            {done && (
+              <>
+                <button
+                  onClick={copy}
+                  style={{
+                    width: '100%', padding: '14px',
+                    background: 'none', border: '1px solid #C8A96E',
+                    borderRadius: '10px', color: '#C8A96E',
+                    fontSize: '14px', fontFamily: 'Georgia, serif',
+                    cursor: 'pointer', marginBottom: '12px',
+                  }}
+                >
+                  📋  Copy toàn bộ script
+                </button>
+                <div style={{ fontSize: '12px', color: '#444', textAlign: 'center', fontFamily: 'monospace' }}>
+                  Sau khi copy → mở{' '}
+                  <a href="https://notebooklm.google.com" target="_blank" rel="noreferrer" style={{ color: '#C8A96E' }}>
+                    notebooklm.google.com
+                  </a>
+                  {' '}→ New Notebook → Add Source → Paste Text → Audio Overview
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

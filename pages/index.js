@@ -6,6 +6,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const today = new Date().toLocaleDateString('vi-VN', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
@@ -16,6 +17,7 @@ export default function Home() {
     setError('');
     setScript('');
     setDone(false);
+    setCopied(false);
 
     try {
       const res = await fetch('/api/generate', {
@@ -50,8 +52,17 @@ export default function Home() {
   };
 
   const copy = () => {
-    navigator.clipboard.writeText(script);
-    alert('Đã copy! Mở NotebookLM để paste.');
+    const textarea = document.createElement('textarea');
+    textarea.value = script;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
   };
 
   return (
@@ -148,34 +159,50 @@ export default function Home() {
             <div style={{ fontSize: '11px', color: '#444', fontFamily: 'monospace', marginBottom: '16px' }}>
               {script.trim().split(/\s+/).length.toLocaleString()} từ
             </div>
-            <div style={{
-              background: '#0A0A0D', border: '1px solid #1E1E25', borderRadius: '8px',
-              padding: '20px', fontSize: '13px', lineHeight: '1.8', color: '#9E9E9E',
-              whiteSpace: 'pre-wrap', maxHeight: '450px', overflowY: 'auto',
-              marginBottom: '16px', fontFamily: 'monospace',
-            }}>
-              {script}
-            </div>
+
+            {/* Full script in textarea for easy select all */}
+            <textarea
+              readOnly
+              value={script}
+              style={{
+                width: '100%',
+                height: '400px',
+                background: '#0A0A0D',
+                border: '1px solid #1E1E25',
+                borderRadius: '8px',
+                padding: '20px',
+                fontSize: '13px',
+                lineHeight: '1.8',
+                color: '#9E9E9E',
+                fontFamily: 'monospace',
+                resize: 'vertical',
+                marginBottom: '16px',
+              }}
+            />
+
             {done && (
               <>
                 <button
                   onClick={copy}
                   style={{
                     width: '100%', padding: '14px',
-                    background: 'none', border: '1px solid #C8A96E',
-                    borderRadius: '10px', color: '#C8A96E',
+                    background: copied ? '#0A1A0F' : 'none',
+                    border: `1px solid ${copied ? '#5CE09A' : '#C8A96E'}`,
+                    borderRadius: '10px',
+                    color: copied ? '#5CE09A' : '#C8A96E',
                     fontSize: '14px', fontFamily: 'Georgia, serif',
                     cursor: 'pointer', marginBottom: '12px',
+                    transition: 'all 0.2s',
                   }}
                 >
-                  📋  Copy toàn bộ script
+                  {copied ? '✅  Đã copy!' : '📋  Copy toàn bộ script'}
                 </button>
-                <div style={{ fontSize: '12px', color: '#444', textAlign: 'center', fontFamily: 'monospace' }}>
+                <div style={{ fontSize: '12px', color: '#444', textAlign: 'center', fontFamily: 'monospace', lineHeight: '1.6' }}>
                   Sau khi copy → mở{' '}
                   <a href="https://notebooklm.google.com" target="_blank" rel="noreferrer" style={{ color: '#C8A96E' }}>
                     notebooklm.google.com
                   </a>
-                  {' '}→ New Notebook → Add Source → Paste Text → Audio Overview
+                  {' '}→ New Notebook → Add Source → Copied text → Paste → Audio Overview
                 </div>
               </>
             )}

@@ -1,4 +1,4 @@
-export const config = { runtime: 'edge' };
+export const config = { runtime: 'nodejs' };
 
 const PROMPTS = {
   balanced: `Bạn là một biên tập viên podcast tin tức chuyên nghiệp người Việt Nam.
